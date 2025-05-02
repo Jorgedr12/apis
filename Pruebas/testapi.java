@@ -1,51 +1,69 @@
-import java.util.Scanner;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.util.Scanner;
+import org.json.JSONObject;
 
 public class testapi {
-    public static void main(String args[]) {
 
-        System.out.println("Escribe el codigo del producto a buscar: ");
-
-        Scanner sc = new Scanner(System.in);
-
-        String codigo = sc.nextLine();
-
-        String url = "http://localhost/apis/buscar_producto.php?codigo=" + codigo;
-
-        System.out.println(url);
-
-        // llamamos a la api
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Escribe el código del producto a buscar: ");
+        String codigo = scanner.nextLine().trim();
+        scanner.close();
 
         try {
-            URL obj = new URL(url);
-            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-            con.setRequestMethod("GET");
+            URI uri = new URI("http://localhost/apis/buscar_producto.php?codigo=" + codigo);
+            URL url = uri.toURL();        
 
-            int responseCode = con.getResponseCode();
-            System.out.println("Response Code 1: " + responseCode);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-            // if (responseCode == HttpURLConnection.HTTP_OK) {
-            if (responseCode == 500) {
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                String inputLine;
-                StringBuilder response = new StringBuilder();
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                in.close();
-
-                System.out.println("Response 2: " + response.toString());
+            int status = conn.getResponseCode();
+            BufferedReader reader;
+            if (status >= 200 && status < 300) {
+                reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             } else {
-                System.out.println("GET request failed.");
+                reader = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
+            StringBuilder responseStr = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                responseStr.append(line);
+            }
+            reader.close();
+            conn.disconnect();
+
+            if (!responseStr.toString().isEmpty()) {
+                try {
+                    JSONObject json = new JSONObject(responseStr.toString());
+
+                    if (json.getInt("status") == 200 && json.has("data")) {
+                        JSONObject producto = json.getJSONObject("data");
+                        System.out.println("Producto encontrado:");
+                        System.out.println("Nombre: " + producto.getString("nombre"));
+                        System.out.println("Precio: " + producto.getString("precio"));
+                        System.out.println("Imagen: " + producto.getString("imagen"));
+                    } else {
+                        String mensaje = json.has("mensaje") ? json.getString("mensaje") : "Producto no encontrado";
+                        System.out.println("Error: " + json.opt("status") + " - " + mensaje);
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("Error: Respuesta no válida del servidor (no es JSON)");
+                }
+            } else {
+                System.out.println("Error: La respuesta está vacía.");
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error de conexión o solicitud: " + e.getMessage());
+        }
     }
 }

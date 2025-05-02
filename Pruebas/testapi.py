@@ -24,7 +24,7 @@ else:
 if data.get('status') == 200 and 'data' in data:
     producto = data['data']
     print("Producto encontrado:")
-    print(f"Nombre: {producto['nombre']}, Precio: {producto['precio']}, Imagen: {producto['imagen']}")
+    print(f"Nombre: {producto['nombre']} \nPrecio: {producto['precio']} \nImagen: {producto['imagen']}")
 else:
     mensaje = data.get('mensaje', 'Producto no encontrado')
     print(f"Error: {data.get('status', 'Desconocido')} - {mensaje}")

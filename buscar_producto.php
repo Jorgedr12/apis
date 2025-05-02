@@ -8,11 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendResponse(405, "Método no permitido");
 }
 
-$codigo = isset($_GET["codigo"]) ? trim($_GET["codigo"]) : null;
-
-if (!$codigo) {
+if (!isset($_GET["codigo"]) || trim($_GET["codigo"]) === '') {
     sendResponse(400, "Bad Request: código de producto no proporcionado");
 }
+
+$codigo = trim($_GET["codigo"]);
 
 if (!is_numeric($codigo)) {
     sendResponse(400, "Bad Request: el código debe ser numérico");
